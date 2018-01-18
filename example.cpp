@@ -52,6 +52,7 @@ main()
     
     printf("Field: %d\n", Field<ToList<N1,N2>>::Access(r).value);
     printf("Field: %d\n", FieldAccess<rec, N1,N2>(r).value);
+    printf("Field: %d\n", FieldAccess1<N1,N2>::Access(r).value);
     Field<ToList<N2>>::Access(r) = 0;
     
     printf("FieldPP:\n");
@@ -96,7 +97,7 @@ main()
     WrapPrimitiveType<int> cc;
     cc = cc + 15;
     printf("\nCoercion: %d\n", (coercion::functor::convert(c, cc), cc.value));
-    printf("\n-------\n");
+    printf("\nREVERSE-------\n");
     TPrinter<Reverse<ll> >::Print(printf);
     printf("\n");
     TPrinter<rec>::Print(printf);
@@ -118,13 +119,19 @@ main()
     
     rec1 r1;
     rec2 r2;
-    FieldAccess<rec1, N2>(r1) = 5;
-    FieldAccess<rec2, Next>(r2) = 15;
     
     auto r3 = r1 + r2;
-    
-    printf("\n-------\n");
-    TPrinter<RecordFieldsList<decltype(r3)>>::Print(printf);
+    auto r4 = r - r1;
+
+    printf("\n r3 = r1 + r2\n");
+    printf("r1 = "); TPrinter<decltype(r1)>::Print(printf); printf("\n");
+    printf("r2 = "); TPrinter<decltype(r2)>::Print(printf); printf("\n");
+    printf("r3 = "); TPrinter<decltype(r3)>::Print(printf); printf("\n");
+    printf("\n");
+    printf("\n r4 = r - r1\n");
+    printf("r = "); TPrinter<decltype(r)>::Print(printf); printf("\n");
+    printf("r1 = "); TPrinter<decltype(r1)>::Print(printf); printf("\n");
+    printf("r4 = "); TPrinter<decltype(r4)>::Print(printf); printf("\n");
     printf("\n");
     return 0;
 }

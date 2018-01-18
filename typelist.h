@@ -10,6 +10,8 @@ namespace typeuniverse
 {
 DefType(List, Set);
 DefType(Pair, Set);
+TypeDiscriminator(List);
+TypeDiscriminator(Pair);
 } // end of namespace
 
 namespace typeprint
@@ -192,10 +194,7 @@ struct MkListAux
 };
 
 template<typename T>
-struct MkListAux<0, T>
-{
-    typedef Nil type;
-};
+struct MkListAux<0, T> : Nil {};
 
 template<const int N, typename T>
 using MkList = typename MkListAux<N, T>::type;
@@ -313,9 +312,6 @@ struct FilterAux2
 
 template<const int Idx, template<const int, typename> typename F>
 struct FilterAux2<Idx, F, Nil> : Nil {};
-//{
-//    typedef Nil type;
-//};
 
 template<template<const int, typename> typename F, typename L>
 struct FilterAux3
@@ -357,7 +353,7 @@ struct SliceAux
 };
 
 template<typename L, const int From, const int To>
-using Slice = typename SliceAux<L, From, To>::type;
+using Slice = Essence<SliceAux<L, From, To>>;
 
 template<typename Elt, typename L>
 struct IsPresentAux
@@ -368,44 +364,38 @@ struct IsPresentAux
 };
 
 template<typename Elt, typename L>
-using IsPresent = typename IsPresentAux<Elt, L>::type;
+using IsPresent = Essence<IsPresentAux<Elt, L>>;
 
 template<template<typename> typename F, typename L>
 struct MapAux
 {
-    typedef TCons<typename WrapPrimitiveType<F<Head<L> > >::type, typename MapAux<F, Tail<L> >::type> type;
+    typedef TCons<Essence<WrapPrimitiveType<F<Head<L> > >>, Essence<MapAux<F, Tail<L> >>> type;
 };
 
 template<template<typename> typename F>
-struct MapAux<F, Nil>
-{
-    typedef Nil type;
-};
+struct MapAux<F, Nil> : Nil {};
 
 template<template<typename> typename F, typename L>
-using Map = typename MapAux<F, L>::type;
+using Map = Essence<MapAux<F, L>>;
 
 template<template<typename, typename> typename F, typename L1, typename L2>
 struct Map2Aux
 {
-    typedef TCons<typename WrapPrimitiveType<F<Head<L1>, Head<L2> > >::type,
-                  typename Map2Aux<F, Tail<L1>, Tail<L2> >::type> type;
+    typedef TCons<Essence<WrapPrimitiveType<F<Head<L1>, Head<L2> > >>,
+                  Essence<Map2Aux<F, Tail<L1>, Tail<L2> >>> type;
 };
 
 template<template<typename, typename> typename F>
-struct Map2Aux<F, Nil, Nil>
-{
-    typedef Nil type;
-};
+struct Map2Aux<F, Nil, Nil> : Nil {};
 
 template<template<typename, typename> typename F, typename L1, typename L2>
-using Map2 = typename Map2Aux<F, L1, L2>::type;
+using Map2 = Essence<Map2Aux<F, L1, L2>>;
 
 template<template<typename, typename> typename F, typename V, typename L>
 struct FoldLeftAux
 {
-    typedef typename F<V, Head<L> >::type R;
-    typedef typename FoldLeftAux<F, R, Tail<L> >::type type;
+    typedef Essence<F<V, Head<L> >> R;
+    typedef Essence<FoldLeftAux<F, R, Tail<L> >> type;
 };
 
 template<template<typename, typename> typename F, typename V>
@@ -415,23 +405,33 @@ struct FoldLeftAux<F, V, Nil>
 };
 
 template<template<typename, typename> typename F, typename V, typename L>
-using FoldLeft = typename FoldLeftAux<F, V, L>::type;
+using FoldLeft = Essence<FoldLeftAux<F, V, L>>;
+
+template<template<typename, typename> typename F, typename L, typename V>
+struct FoldRightAux
+{
+    typedef Essence<F<Head<L>, Essence<FoldRightAux<F, Tail<L>, V>> >> type;
+};
+
+template<template<typename, typename> typename F, typename V>
+struct FoldRightAux<F, Nil, V> : V {};
+
+template<template<typename, typename> typename F, typename L, typename V>
+using FoldRight = Essence<FoldRightAux<F, L, V>>;
+
 
 template<template<typename, typename> typename F, typename V, typename L>
 struct FoldLeftLAux
 {
-    typedef typename F<V, L>::type R;
-    typedef typename FoldLeftLAux<F, R, Tail<L> >::type type;
+    typedef Essence<F<V, L>> R;
+    typedef Essence<FoldLeftLAux<F, R, Tail<L> >> type;
 };
 
 template<template<typename, typename> typename F, typename V>
-struct FoldLeftLAux<F, V, Nil>
-{
-    typedef V type;
-};
+struct FoldLeftLAux<F, V, Nil> : V {};
 
 template<template<typename, typename> typename F, typename V, typename L>
-using FoldLeftL = typename FoldLeftLAux<F, V, L>::type;
+using FoldLeftL = Essence<FoldLeftLAux<F, V, L>>;
 
 template<typename L1, typename L2>
 struct IsSubsetAux
@@ -443,7 +443,7 @@ struct IsSubsetAux
 };
 
 template<typename L1, typename L2>
-using IsSubset = typename IsSubsetAux<L1, L2>::type;
+using IsSubset = Essence<IsSubsetAux<L1, L2>>;
 
 template<typename L1, typename L2>
 using IsIsomorphic = And<IsSubset<L1, L2>, IsSubset<L2, L1> >;
@@ -457,17 +457,14 @@ using Intersperse = Zip<L, MkList<Length<L>::value, T> >;
 template<typename L1, typename L2>
 struct AppendAux
 {
-    typedef TCons<Head<L1>, typename AppendAux<Tail<L1>, L2>::type> type;
+    typedef TCons<Head<L1>, Essence<AppendAux<Tail<L1>, L2>>> type;
 };
 
 template<typename L2>
-struct AppendAux<Nil, L2>
-{
-    typedef L2 type;
-};
+struct AppendAux<Nil, L2> : L2 {};
 
 template<typename L1, typename L2>
-using Append = typename AppendAux<L1, L2>::type;
+using Append = Essence<AppendAux<L1, L2>>;
 
 template<typename T1, typename T2>
 struct ProductAux
@@ -482,24 +479,24 @@ struct ProductAux
     };
 
     template<typename T>
-    using P1 = typename P1aux<T>::type;
+    using P1 = Essence<P1aux<T>>;
 
     typedef FoldLeft<Append, Nil, Map<P1, T1> > type;
 };
 
-template<typename T1, typename T2>
-using Product = typename ProductAux<T1, T2>::type;
+template<typename L1, typename L2, typename = typename And<InList<L1>, InList<L2>>::I>
+using Product = Essence<ProductAux<L1, L2>>;
 
 template<typename N, typename TL, template<typename, typename> typename P = TypesEqual>
 struct PresentAux
 {
     template<typename T>
-    using P1 = typename P<N, T>::type;
+    using P1 = Essence<P<N, T>>;
     typedef FoldLeft<Or, False, Map<P1, TL> > type;
 };
 
-template<typename T, typename TL, template<typename, typename> typename P = TypesEqual>
-using Present = typename PresentAux<T, TL, P>::type;
+template<typename T, typename TL, template<typename, typename> typename P = TypesEqual, typename = typename InList<TL>::I>
+using Present = Essence<PresentAux<T, TL, P>>;
 
 template<typename TL, template<typename, typename> typename P>
 struct UniqAux1
@@ -510,25 +507,58 @@ struct UniqAux1
     typedef FoldLeftL<F, Nil, TL> type;
 };
 
-template<typename TL, template<typename, typename> typename P = TypesEqual>
-using Uniq = typename UniqAux1<TL, P>::type;
+template<typename TL, template<typename, typename> typename P = TypesEqual, typename = typename InList<TL>::I>
+using Uniq = Essence<UniqAux1<TL, P>>;
 
-namespace{
-    template<typename Acc, typename TL>
-    struct ReverseAux
-    {
-        typedef typename ReverseAux<TCons<Head<TL>, Acc>, Tail<TL> >::type type;
-    };
+// Some template adapters
 
-    template<typename Acc>
-    struct ReverseAux<Acc, Nil>
-    {
-        typedef Acc type;
-    };
-}
+template<template<typename, typename> typename F>
+struct SwapTemplateArgs21
+{
+    template<typename A, typename B>
+    struct Template : F<B,A> {};
+};
+
+template<template<typename, typename, typename> typename F>
+struct SwapTemplateArgs321
+{
+    template<typename A, typename B, typename C>
+    struct Template : F<C, B, A> {};
+};
+
+template<template<typename, typename, typename> typename F>
+struct SwapTemplateArgs213
+{
+    template<typename A, typename B, typename C>
+    struct Template : F<B, A, C> {};
+};
+
+template<template<typename, typename, typename> typename F>
+struct SwapTemplateArgs132
+{
+    template<typename A, typename B, typename C>
+    struct Template : F<A, C, B> {};
+};
+
+template<template<typename, typename, typename> typename F>
+struct SwapTemplateArgs312
+{
+    template<typename A, typename B, typename C>
+    struct Template : F<C, A, B> {};
+};
+
+template<template<typename, typename, typename> typename F>
+struct SwapTemplateArgs231
+{
+    template<typename A, typename B, typename C>
+    struct Template : F<B, C, A> {};
+};
+
+//Reverse
 
 template<typename TL>
-using Reverse = Essence<ReverseAux<Nil, TL>>;
+using Reverse = FoldLeft<SwapTemplateArgs21<TCons>::Template, Nil, TL>;
+
 
 template<typename TL, template<typename, typename> typename P = TypesEqual>
 using IsUniq = BoolToProp<Length<TL>::value == Length<Uniq<TL, P>>::value>;
@@ -542,8 +572,21 @@ struct IntersectAux
     typedef Filter<F, TL1> type;
 };
 
-template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual>
+template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual,
+         typename = typename And<InList<TL1>, InList<TL2>>::I>
 using Intersect = Essence<IntersectAux<TL1, TL2, P>>;
+
+template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual>
+struct SubtractAux
+{
+    template<const int, typename T>
+    using F = Not<Present<T, TL2, P>>;
+    typedef Filter<F, TL1> type;
+};
+
+template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual,
+         typename = typename And<InList<TL1>,InList<TL2>>::I>
+using Subtract = Essence<SubtractAux<TL1, TL2, P>>;
 
 } // end of namespace typelist
 

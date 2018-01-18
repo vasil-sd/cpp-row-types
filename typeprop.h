@@ -186,7 +186,7 @@ struct IfAux<False, TrueBranch, FalseBranch>
 };
 
 template<typename Cond, typename TrueBranch, typename FalseBranch>
-using If = typename IfAux<Cond, TrueBranch, FalseBranch>::type;
+using If = Essence<IfAux<Essence<Cond>, TrueBranch, FalseBranch>>;
 
 } // end of namespace typeprop
 

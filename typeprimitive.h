@@ -32,8 +32,11 @@ DefType(Integral, Set);
            value = v.value; \
            return *this; \
         } \
+    }; \
+    template<const Prim Val> \
+    struct c ## T : T { \
+        static constexpr Prim cvalue = Val; \
     }
-
 
 
 } // end of namespace

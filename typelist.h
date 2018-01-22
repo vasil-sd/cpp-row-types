@@ -15,13 +15,6 @@ TypeDiscriminator(List);
 TypeDiscriminator(Pair);
 } // end of namespace
 
-namespace typeprint
-{
-using namespace typeuniverse;
-TypePrinterMacro(List, Set);
-TypePrinterMacro(Pair, Set);
-} // end of namespace
-
 namespace typelist
 {
 
@@ -30,13 +23,15 @@ using namespace typeprint;
 using namespace typeprop;
 using namespace typeprimitive;
 
+DefTypeSymbol(Nil);
 struct Nil
 {
+    typedef Nil_Symbol type_name;
     typedef List Type;
     typedef Nil type;
 };
 
-DefSymbol(TCons_Symbol);
+DefTypeSymbol(TCons);
 
 template<typename Head, typename Tail>
 struct TCons
@@ -49,7 +44,7 @@ struct TCons
     typedef TCons I; // inhabited
 };
 
-DefSymbol(TPair_Symbol);
+DefTypeSymbol(TPair);
 
 template<typename F, typename S>
 struct TPair
@@ -71,7 +66,16 @@ namespace typeprint
 using namespace typeuniverse;
 using namespace typelist;
 
-TypePrinterMacro(Nil, List);
+template<>
+struct TypePrinter<Nil, List>
+{
+    template<typename F>
+    static void Print(F f)
+    {
+        f(Nil::type_name::value);
+    }
+
+};
 
 template<typename T>
 struct TypePrinter<T, List>
@@ -79,7 +83,8 @@ struct TypePrinter<T, List>
     template<typename F>
     static void Print(F f)
     {
-        f("TCons( ");
+        f(T::type_name::value);
+        f("( ");
         TPrinter<typename T::head>::template Print<F>(f);
         f(" , ");
         TPrinter<typename T::tail>::template Print<F>(f);
@@ -94,7 +99,8 @@ struct TypePrinter<P, Pair>
     template<typename F>
     static void Print(F f)
     {
-        f("TPair( ");
+        f(P::type_name::value);
+        f("( ");
         TPrinter<typename P::first>::template Print<F>(f);
         f(" , ");
         TPrinter<typename P::second>::template Print<F>(f);

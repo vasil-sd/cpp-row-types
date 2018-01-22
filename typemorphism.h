@@ -8,7 +8,7 @@ namespace typeuniverse
 {
 DefType(Morphism, Set);
 
-DefSymbol(Functor_Symbol);
+DefTypeSymbol(Functor);
 
 template<typename C, typename From, typename To>
 struct Functor
@@ -29,15 +29,14 @@ namespace typeprint
 
 using namespace typeuniverse;
 
-TypePrinterMacro(Morphism, Set);
-
 template<typename Functor>
 struct TypePrinter<Functor, Morphism>
 {
     template<typename F>
     static void Print(F f)
     {
-        f("Functor( ");
+        f(Functor::type_name::value);
+        f("( ");
         TPrinter<typename Functor::from>::Print(f);
         f(" -> ");
         TPrinter<typename Functor::to>::Print(f);

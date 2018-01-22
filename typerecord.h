@@ -97,7 +97,6 @@ struct RecordField : RecordFieldInfo<Typ>
 
 }
 
-
 namespace typerecord
 {
 
@@ -199,9 +198,12 @@ namespace typeuniverse
 
 using namespace typerecord;
 
+DefTypeSymbol(Record);
+
 template<typename TL>
 struct RecordAux : RecordRepresentationAux<RecordAux<TL>, 0, TL>
 {
+    typedef Record_Symbol type_name;
     typedef Records Type;
     typedef RecordAux type;
     typedef TL record_fields;
@@ -226,8 +228,6 @@ namespace typeprint
 
 using namespace typeuniverse;
 using namespace typeprimitive;
-
-TypePrinterMacro(Records, Set);
 
 template<typename>
 struct PrintIfNotNil
@@ -280,7 +280,8 @@ struct TypePrinter<R, Records>
     template<typename F>
     static void Print(F f)
     {
-        f("Record{ ");
+        f(R::type_name::value);
+        f("{ ");
         FieldPrinter<Fields<R>>::Print(f);
         f(" }");
     }

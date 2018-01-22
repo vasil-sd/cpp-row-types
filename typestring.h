@@ -16,14 +16,6 @@ DefType(ConstStrings, Set);
 TypeDiscriminator(ConstStrings);
 }
 
-namespace typeprint
-{
-using namespace typeuniverse;
-TypePrinterMacro(Strings, Set);
-TypePrinterMacro(ConstStrings, Set);
-}
-
-
 namespace typestring
 {
 
@@ -59,9 +51,12 @@ using namespace typeprimitive;
 using namespace typelist;
 using namespace typestring;
 
+DefTypeSymbol(String);
+
 template<typename L>
 struct String
 {
+    typedef String_Symbol type_name;
     typedef Strings Type;
     typedef String type;
     typedef String I;
@@ -70,9 +65,12 @@ struct String
     char value[length];
 };
 
+DefTypeSymbol(ConstString);
+
 template<const char Str[]>
 struct cString : String<cUInt<Length<StringToList<Str>>::value>>
 {
+    typedef ConstString_Symbol type_name;
     typedef String<cUInt<Length<StringToList<Str>>::value>> string;
     typedef ConstStrings Type;
     typedef cString type;

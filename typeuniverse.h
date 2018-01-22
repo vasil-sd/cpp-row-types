@@ -15,7 +15,7 @@ struct UU // universe
 };
 
 #define DefType(T, ST) \
-    DefSymbol(T##_Symbol); \
+    DefTypeSymbol(T); \
     struct T \
     { \
         typedef T##_Symbol type_name; \
@@ -34,6 +34,15 @@ struct Symbol
     typedef Symbol I;
     static constexpr const char value[] = "Symbol";
 };
+
+#define DefTypeSymbol(Name) \
+    struct Name##_Symbol \
+    { \
+        typedef Name##_Symbol type_name; \
+        typedef Symbol Type; \
+        typedef Name##_Symbol type; \
+        static constexpr const char value[] = #Name; \
+    }
 
 #define DefSymbol(Name) \
     struct Name \

@@ -17,8 +17,10 @@ template<typename T>
 using IsIntegralType = Or<InIntegral<T>, InIntegral<TypeOf<T>>>;
 
 #define DefTypePrimitive(Prim, T) \
+    DefTypeSymbol(T);\
     struct T \
     { \
+        typedef T##_Symbol type_name; \
         typedef Integral Type; \
         typedef T type; \
         typedef Prim primitive_type; \
@@ -39,9 +41,11 @@ using IsIntegralType = Or<InIntegral<T>, InIntegral<TypeOf<T>>>;
            return *this; \
         } \
     }; \
+    DefTypeSymbol(c##T); \
     template<const Prim Val> \
     struct c##T : T \
     { \
+        typedef c##T##_Symbol type_name; \
         typedef T Type; \
         static constexpr Prim cvalue = Val; \
         typedef c##T type; \
@@ -56,8 +60,6 @@ namespace typeprint
 {
 
 using namespace typeuniverse;
-
-TypePrinterMacro(Integral, Set);
 
 #define TypePrimitivePrinterMacro(T) \
     template<> \

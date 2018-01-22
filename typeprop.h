@@ -6,8 +6,13 @@
 
 namespace typeuniverse
 {
+
+DefTypeSymbol(True);
+DefTypeSymbol(False);
+
 struct True
 {
+    typedef True_Symbol type_name;
     typedef Prop Type;
     typedef True type;
     typedef True I; //one inhabitant
@@ -16,6 +21,7 @@ struct True
 
 struct False
 {
+    typedef False_Symbol type_name;
     typedef Prop Type;
     typedef False type;
     static constexpr bool value = false;
@@ -35,13 +41,6 @@ TypeDiscriminator(Prop);
 TypeDiscriminator(Set);
 TypeDiscriminator(Unknown);
 
-}
-
-namespace typeprint
-{
-using namespace typeuniverse;
-TypePrinterMacro(True, Prop);
-TypePrinterMacro(False, Prop);
 }
 
 namespace typeuniverse

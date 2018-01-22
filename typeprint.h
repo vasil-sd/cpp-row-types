@@ -14,44 +14,15 @@ struct TypePrinter
     template<typename F>
     static void Print(F f)
     {
-        f("<unknown>");
+        f(T::type_name::value);
     }
-
-};
-
-
-
-#define TypePrinterMacro(T, ST) \
-    template<> \
-    struct TypePrinter<T, ST> \
-    { \
-        template<typename F> \
-        static void Print(F f) \
-        { \
-            f(# T); \
-        } \
-        template<typename F> \
-        static void print(F f, const T& o) \
-        { \
-            f(# T); \
-        } \
-    }
-
-TypePrinterMacro(UU, UU);
-TypePrinterMacro(Unknown, UU);
-TypePrinterMacro(Prop, UU);
-TypePrinterMacro(Set, UU);
-TypePrinterMacro(Symbol, UU);
-
-template<typename S>
-struct TypePrinter<S, Symbol>
-{
     template<typename F>
-    static void Print(F f)
+    static void print(F f, const T& o)
     {
-        f(S::value);
+        f("value_of(");
+        f(T::type_name::value);
+        f(")");
     }
-
 };
 
 template<typename T>

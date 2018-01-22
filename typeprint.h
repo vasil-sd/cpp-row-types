@@ -20,6 +20,7 @@ struct TypePrinter
 };
 
 
+
 #define TypePrinterMacro(T, ST) \
     template<> \
     struct TypePrinter<T, ST> \

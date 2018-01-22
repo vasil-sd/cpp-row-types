@@ -6,6 +6,7 @@
 #include "typelist.h"
 #include "typeprint.h"
 #include "typeprimitive.h"
+#include "typeutils.h"
 #include <new>
 /*
     An idea: every physical type has Get/Set accessors, so
@@ -94,15 +95,6 @@ struct RecordField : RecordFieldInfo<Typ>
     }
 };
 
-template<const unsigned int V>
-struct IntVal
-{
-    typedef UInt Type;
-    typedef IntVal type;
-    typedef IntVal I;
-    static constexpr unsigned int value = V;
-};
-
 }
 
 
@@ -110,12 +102,13 @@ namespace typerecord
 {
 
 using namespace typeuniverse;
+using namespace typeutils;
 
 template<const unsigned int Off, typename TL>
 struct RecordFieldOffsets
 {
     typedef TCons<TPair<First<Head<TL>>,
-                        IntVal<
+                        cUInt<
                         (Off + RecordFieldInfo<Second<Head<TL>>>::field_alignment - 1) & (~(static_cast<unsigned int>(RecordFieldInfo<Second<Head<TL>>>::field_alignment - 1)))>>,
                   Essence<
                     RecordFieldOffsets<
@@ -125,7 +118,7 @@ struct RecordFieldOffsets
                   >> type;
 };
 
-template<const int Off>
+template<const unsigned int Off>
 struct RecordFieldOffsets<Off, Nil> : Nil {};
 
 template<typename Top, const unsigned int Off, typename TL>
@@ -147,7 +140,7 @@ struct RecordRepresentationAux<Top, Off, Nil>
 template<typename N, typename FL>
 struct FieldTypeAux
 {
-    template<const int, typename Pr>
+    template<typename Pr>
     using P = TypesEqual<N, First<Pr>>;
 
     typedef Second<Head<Filter<P, FL>>> type;
@@ -159,7 +152,7 @@ using FieldType = Essence<FieldTypeAux<N, typename R::record_fields>>;
 template<typename N, typename FL>
 struct FieldOffsetAux
 {
-    template<const int, typename Pr>
+    template<typename Pr>
     using P = TypesEqual<N, First<Pr>>;
 
     typedef Second<Head<Filter<P, FL>>> type;
@@ -171,7 +164,7 @@ using FieldOffset = typename FieldOffsetAux<N, typename R::record_field_offsets>
 template<typename R>
 using Fields = typename R::record_fields;
 
-template<typename N, typename R, typename T = FieldType<N, R>, const int O = FieldOffset<N, R>::value>
+template<typename N, typename R, typename T = FieldType<N, R>, const int O = FieldOffset<N, R>::cvalue>
 inline T&
 GetFieldValue(R& r)
 {
@@ -183,7 +176,7 @@ struct InitFieldsAux : InitFieldsAux<R, Tail<FLS>>
 {
     InitFieldsAux(R& r) : InitFieldsAux<R, Tail<FLS>>(r)
     {
-        r.R::template RecordField<R, FieldOffset<Head<FLS>, R>::value, Head<FLS>, FieldType<Head<FLS>, R>>::Init(r);
+        r.R::template RecordField<R, FieldOffset<Head<FLS>, R>::cvalue, Head<FLS>, FieldType<Head<FLS>, R>>::Init(r);
     }
 };
 
@@ -293,48 +286,6 @@ struct TypePrinter<R, Records>
     }
 };
 
-template<typename I>
-struct TypePrinter<I, UInt>
-{
-    template<typename T>
-    static void to_string(char* s, T v)
-    {
-        int l = 0;
-        int i = 0;
-        do
-        {
-            s[i++] = v%10 + '0';
-            v /= 10;
-        }while(v);
-        s[i] = 0;
-        i--;
-        l = i;
-        i /= 2;
-        do
-        {
-            char t = s[l-i];
-            s[l-i] = s[i];
-            s[i] = t;
-            i = i ? i-1:i;
-        }while(i);
-    };
-    template<typename F>
-    static void Print(F f)
-    {
-        char str[32];
-        f("UInt< ");
-        to_string(str, I::value);
-        f(" >");
-    }
-    template<typename F>
-    static void print(const I& obj, F f)
-    {
-        char str[32];
-        to_string(str, obj.value);
-        f(str);
-    }
-};
-
 template<typename Fld>
 struct TypePrinter<Fld, RecordFields>
 {
@@ -357,8 +308,7 @@ struct TypePrinter<Fld, RecordFields>
             char t = s[l-i];
             s[l-i] = s[i];
             s[i] = t;
-            i = i ? i-1:i;
-        }while(i);
+        }while(i--);
     };
 
     template<typename F>
@@ -390,6 +340,7 @@ namespace typerecord
 
 using namespace typeuniverse;
 using namespace typelist;
+using namespace typeutils;
 
 template<typename Ns, typename P = Empty<Tail<Ns>>>
 struct Field
@@ -482,7 +433,7 @@ template <typename R1, typename R2,
 using SubtractRecords = Essence<SubtractRecordsAux<R1, R2>>;
 
 template <typename R, typename N, typename = FieldsPresent<R, ToList<N>>> // R should be record and contain field with name N
-using SpecificRecordField = typename R::template RecordField<R, FieldOffset<N, R>::value, N, FieldType<N, R>>;
+using SpecificRecordField = typename R::template RecordField<R, FieldOffset<N, R>::cvalue, N, FieldType<N, R>>;
 
 template <typename R, typename TL>
 struct RecordFieldsListAux
@@ -541,7 +492,6 @@ void UpdateFromRecord(R& r, const R1& r1)
 {
     UpdateFromRecordAux1<R, R1>::update(r, const_cast<R1&>(r1));
 }
-
 
 template <typename R, typename R1, typename Result = UnionRecords<R, R1>, typename = typename InRecords<R>::I, typename = typename InRecords<R1>::I>
 Result inline operator + (const R& r, const R1& r1)

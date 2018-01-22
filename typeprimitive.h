@@ -8,7 +8,13 @@
 namespace typeuniverse
 {
 
+using namespace typeprop;
+
 DefType(Integral, Set);
+TypeDiscriminator(Integral);
+
+template<typename T>
+using IsIntegralType = Or<InIntegral<T>, InIntegral<TypeOf<T>>>;
 
 #define DefTypePrimitive(Prim, T) \
     struct T \
@@ -34,10 +40,15 @@ DefType(Integral, Set);
         } \
     }; \
     template<const Prim Val> \
-    struct c ## T : T { \
+    struct c##T : T \
+    { \
+        typedef T Type; \
         static constexpr Prim cvalue = Val; \
+        typedef c##T type; \
+        c##T() : T(cvalue) {} \
+        c##T(const primitive_type &v) : T(value) {} \
+        c##T(const type &v) : T(v.value) {} \
     }
-
 
 } // end of namespace
 
@@ -52,6 +63,14 @@ TypePrinterMacro(Integral, Set);
     template<> \
     struct TypePrinter<T, Integral> \
     { \
+        template<typename V> \
+        static void to_string(char* s, V v) \
+        { \
+            int l = 0; int i = 0; \
+            do { s[i++] = v%10 + '0'; v /= 10; }while(v); \
+            s[i] = 0; i--; l = i; i /= 2; \
+            do { char t = s[l-i]; s[l-i] = s[i]; s[i] = t;}while(i--); \
+        }; \
         template<typename F> \
         static void Print(F f) \
         { \
@@ -60,7 +79,42 @@ TypePrinterMacro(Integral, Set);
         template<typename F> \
         static void print(const T& o, F f) \
         { \
-            f(# T); \
+            char str[32]; \
+            f(#T "<"); \
+            to_string(str, o.value); f(str); \
+            f(">"); \
+        } \
+    }; \
+    template<typename cT> \
+    struct TypePrinter<cT, T> \
+    { \
+        template<typename V> \
+        static void to_string(char* s, V v) \
+        { \
+            int l = 0; int i = 0; \
+            do { s[i++] = v%10 + '0'; v /= 10; }while(v); \
+            s[i] = 0; i--; l = i; i /= 2; \
+            do { char t = s[l-i]; s[l-i] = s[i]; s[i] = t;}while(i--); \
+        }; \
+        template<typename F> \
+        static void Print(F f) \
+        { \
+            char str[32]; \
+            f("c" # T); \
+            f("("); \
+            to_string(str, cT::cvalue); f(str); \
+            f(")"); \
+        } \
+        template<typename F> \
+        static void print(const cT& o, F f) \
+        { \
+            char str[32]; \
+            f("c" #T "<"); \
+            to_string(str, o.value); f(str); \
+            f("("); \
+            to_string(str, cT::cvalue); f(str); \
+            f(")"); \
+            f(">"); \
         } \
     };
 
@@ -104,7 +158,7 @@ struct TPrinter
     template<typename F>
     static void Print(F f)
     {
-        TypePrinter<typename WrapPrimitiveType<T>::type, typename WrapPrimitiveType<T>::Type>::template Print(f);
+        TypePrinter<Essence<WrapPrimitiveType<T>>, typename WrapPrimitiveType<T>::Type>::template Print(f);
     };
 };
 }
@@ -114,7 +168,8 @@ struct TPrinter
     namespace typeprint { using namespace typeuniverse; TypePrimitivePrinterMacro(T); } \
     namespace typeprimitive { using namespace typeuniverse; using namespace typeprint; TypePrimitiveWrapperMacro( \
                                   Prim, \
-                                  T); }
+                                  T); \
+                              TypeDiscriminator(T);}
 
 //Here actual definitions
 DefPrimitiveType(int, Int);

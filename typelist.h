@@ -5,6 +5,7 @@
 #include "typeprint.h"
 #include "typeprop.h"
 #include "typeprimitive.h"
+#include "typeutils.h"
 
 namespace typeuniverse
 {
@@ -35,9 +36,12 @@ struct Nil
     typedef Nil type;
 };
 
+DefSymbol(TCons_Symbol);
+
 template<typename Head, typename Tail>
 struct TCons
 {
+    typedef TCons_Symbol type_name;
     typedef Head head;
     typedef Tail tail;
     typedef List Type;
@@ -45,9 +49,12 @@ struct TCons
     typedef TCons I; // inhabited
 };
 
+DefSymbol(TPair_Symbol);
+
 template<typename F, typename S>
 struct TPair
 {
+    typedef TPair_Symbol type_name;
     typedef Pair Type;
     typedef TPair type;
     typedef TPair I;
@@ -105,6 +112,7 @@ using namespace typeuniverse;
 using namespace typeprop;
 using namespace typeprint;
 using namespace typeprimitive;
+using namespace typeutils;
 
 template<typename T>
 using Head = typename T::head;
@@ -288,83 +296,96 @@ using Zip3 = typename Zip3Aux<L1, L2, L3>::type;
 
 // Filter
 
-template<const int, template<const int, typename> typename F, typename L>
+template<typename, template<typename, typename> typename F, typename L>
 struct FilterAux2;
 
-template<typename, const int Idx, template<const int, typename> typename F, typename L>
+template<typename, typename Idx, template<typename, typename> typename F, typename L>
 struct FilterAux
 {
-    typedef typename FilterAux2<Idx + 1, F, Tail<L> >::type type;
+    typedef Essence<FilterAux2<cInt<Idx::cvalue + 1>, F, Tail<L> >> type;
 };
 
-template<const int Idx, template<const int, typename> typename F, typename L>
+template<typename Idx, template<typename, typename> typename F, typename L>
 struct FilterAux<True, Idx, F, L>
 {
-    typedef TCons<Head<L>, typename FilterAux2<Idx + 1, F, Tail<L> >::type> type;
+    typedef TCons<Head<L>, Essence<FilterAux2<cInt<Idx::cvalue + 1>, F, Tail<L> >>> type;
 };
 
-template<const int Idx, template<const int, typename> typename F, typename L>
+template<typename Idx, template<typename, typename> typename F, typename L>
 struct FilterAux2
 {
-    typedef typename FilterAux<Inhabited<typename WrapPrimitiveType<F<Idx, Head<L> > >::type>, Idx, F,
-                               L>::type type;
+    typedef Essence<FilterAux<Inhabited<Essence<WrapPrimitiveType<F<Idx, Head<L> > >>>, Idx, F,L>> type;
 };
 
-template<const int Idx, template<const int, typename> typename F>
+template<typename Idx, template<typename, typename> typename F>
 struct FilterAux2<Idx, F, Nil> : Nil {};
 
-template<template<const int, typename> typename F, typename L>
+template<template<typename, typename> typename F, typename L>
 struct FilterAux3
 {
-    typedef typename FilterAux2<0, F, L>::type type;
+    typedef Essence<FilterAux2<cInt<0>, F, L>> type;
 };
 
-template<template<const int, typename> typename F, typename L>
-using Filter = typename FilterAux3<F, L>::type;
+template<template<typename, typename> typename F, typename L>
+using FilterN = Essence<FilterAux3<F, L>>;
+
+template<template<typename> typename F, typename L>
+struct FilterAux4
+{
+    template<typename, typename V>
+    using P = F<V>;
+
+    typedef FilterN<P, L> type;
+};
+
+template<template<typename> typename F, typename L>
+using Filter = Essence<FilterAux4<F, L>>;
 
 // Some helpers
 
-template<typename L, const int Period, const int Pos>
+template<typename L, typename Period, typename Pos>
 struct PeriodicalSelectAux
 {
-    template<const int Idx, typename>
-    using P = BoolToProp<Idx % Period == Pos>;
-    typedef Filter<P, L> type;
+    template<typename Idx, typename>
+    using P = BoolToProp<Idx::cvalue % Period::cvalue == Pos::cvalue>;
+    typedef FilterN<P, L> type;
 };
 
-template<typename L, const int Period, const int Pos>
-using PeriodicalSelect = typename PeriodicalSelectAux<L, Period, Pos>::type;
+template<typename L, typename Period, typename Pos,
+         typename = typename And<InList<L>, And<IsIntegralType<Period>, IsIntegralType<Pos>>>::I>
+using PeriodicalSelect = Essence<PeriodicalSelectAux<L, Period, Pos>>;
 
 template<typename L>
-using SelectEven = PeriodicalSelect<L, 2, 0>;
+using SelectEven = PeriodicalSelect<L, cInt<2>, cInt<0>>;
 
 template<typename L>
-using SelectOdd = PeriodicalSelect<L, 2, 1>;
+using SelectOdd = PeriodicalSelect<L, cInt<2>, cInt<1>>;
 
-template<typename L, const int Idx>
-using ElementAt = PeriodicalSelect<L, Length<L>::value, Idx>;
+template<typename L, typename Idx>
+using ElementAt = PeriodicalSelect<L, cInt<Length<L>::value>, Idx>;
 
-template<typename L, const int From, const int To>
+template<typename L, typename From, typename To>
 struct SliceAux
 {
-    template<const int Idx, typename>
-    using P = BoolToProp<Idx >= From && Idx <= To>;
-    typedef Filter<P, L> type;
+    template<typename Idx, typename>
+    using P = BoolToProp<Idx::cvalue >= From::cvalue && Idx::cvalue <= To::cvalue>;
+    typedef FilterN<P, L> type;
 };
 
-template<typename L, const int From, const int To>
+template<typename L, typename From, typename To,
+         typename = typename And<InList<L>, And<IsIntegralType<From>, And<IsIntegralType<To>, BoolToProp<To::cvalue <= From::cvalue>>>>::I>
 using Slice = Essence<SliceAux<L, From, To>>;
 
-template<typename Elt, typename L>
+template<typename Elt, typename L, template<typename, typename> typename P>
 struct IsPresentAux
 {
-    template<const int, typename N>
-    using P = TypesEqual<Elt, N>;
-    typedef Not<Empty<Filter<P, L> > > type;
+    template<typename N>
+    using P1 = P<Elt, N>;
+    typedef Not<Empty<Filter<P1, L> > > type;
 };
 
-template<typename Elt, typename L>
-using IsPresent = Essence<IsPresentAux<Elt, L>>;
+template<typename Elt, typename L, template<typename, typename> typename P = TypesEqual>
+using IsPresent = Essence<IsPresentAux<Elt, L, P>>;
 
 template<template<typename> typename F, typename L>
 struct MapAux
@@ -554,11 +575,24 @@ struct SwapTemplateArgs231
     struct Template : F<B, C, A> {};
 };
 
+template<template<typename> typename F>
+struct SelectTemplateArg1of2
+{
+    template<typename A, typename B>
+    struct Template : F<A> {};
+};
+
+template<template<typename> typename F>
+struct SelectTemplateArg2of2
+{
+    template<typename A, typename B>
+    struct Template : F<B> {};
+};
+
 //Reverse
 
 template<typename TL>
 using Reverse = FoldLeft<SwapTemplateArgs21<TCons>::Template, Nil, TL>;
-
 
 template<typename TL, template<typename, typename> typename P = TypesEqual>
 using IsUniq = BoolToProp<Length<TL>::value == Length<Uniq<TL, P>>::value>;
@@ -566,7 +600,7 @@ using IsUniq = BoolToProp<Length<TL>::value == Length<Uniq<TL, P>>::value>;
 template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual>
 struct IntersectAux
 {
-    template<const int, typename T>
+    template<typename T>
     using F = Present<T, TL2, P>;
 
     typedef Filter<F, TL1> type;
@@ -579,7 +613,7 @@ using Intersect = Essence<IntersectAux<TL1, TL2, P>>;
 template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual>
 struct SubtractAux
 {
-    template<const int, typename T>
+    template<typename T>
     using F = Not<Present<T, TL2, P>>;
     typedef Filter<F, TL1> type;
 };
@@ -587,6 +621,18 @@ struct SubtractAux
 template<typename TL1, typename TL2, template<typename, typename> typename P = TypesEqual,
          typename = typename And<InList<TL1>,InList<TL2>>::I>
 using Subtract = Essence<SubtractAux<TL1, TL2, P>>;
+
+template <template<typename ...> typename T, typename TL, typename ... Args>
+struct ApplyToListAux : ApplyToListAux<T, Tail<TL>, Args..., Head<TL>> {};
+
+template <template<typename ...> typename T, typename ... Args>
+struct ApplyToListAux<T, Nil, Args...>
+{
+    typedef T<Args...> result;
+};
+
+template<template <typename ...> typename T, typename TL>
+using ApplyToList = ApplyToListAux<T, TL>;
 
 } // end of namespace typelist
 

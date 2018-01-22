@@ -8,9 +8,12 @@ namespace typeuniverse
 {
 DefType(Morphism, Set);
 
+DefSymbol(Functor_Symbol);
+
 template<typename C, typename From, typename To>
 struct Functor
 {
+    typedef Functor_Symbol type_name;
     typedef Morphism Type;
     typedef Functor type;
     typedef From from;

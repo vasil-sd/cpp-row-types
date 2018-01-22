@@ -4,31 +4,47 @@
 namespace typeuniverse
 {
 
+struct UU_Symbol;
+
 struct UU // universe
 {
+    typedef UU_Symbol type_name;
     typedef UU Type;
     typedef UU type;
     typedef UU I; // inhabited by Prop, Set etc...
 };
 
 #define DefType(T, ST) \
+    DefSymbol(T##_Symbol); \
     struct T \
     { \
+        typedef T##_Symbol type_name; \
         typedef ST Type; \
         typedef T type; \
         typedef T I; \
     }
 
 // type for symbolic names
-DefType(Symbol, UU);
+
+struct Symbol
+{
+    typedef Symbol type_name;
+    typedef UU Type;
+    typedef Symbol type;
+    typedef Symbol I;
+    static constexpr const char value[] = "Symbol";
+};
 
 #define DefSymbol(Name) \
     struct Name \
     { \
+        typedef Name type_name; \
         typedef Symbol Type; \
         typedef Name type; \
-        static constexpr char value[] = # Name; \
+        static constexpr const char value[] = #Name; \
     }
+
+DefSymbol(UU_Symbol);
 
 //type for propositions
 DefType(Prop, UU);

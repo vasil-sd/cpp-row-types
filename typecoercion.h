@@ -23,7 +23,7 @@ struct SelectCoercionsAux
 {
     typedef Product<TLfrom, TLto> prod; // get all types combination
 
-    template<const int, typename P>
+    template<typename P>
     using F = If<Inhabited<typename C<First<P>, Second<P> >::type>,
                  True,
                  False>;
@@ -70,10 +70,10 @@ using SelectCoercions = typename SelectCoercionsAux3<TL, CLs ...>::type;
 template<typename A, typename From, typename To, typename Fs>
 struct FindCoercionAux
 {
-    template<const int, typename F>
+    template<typename F>
     using P = TypesEqual<From, typename F::from>;
 
-    template<const int, typename F>
+    template<typename F>
     using NP = Not<TypesEqual<From, typename F::from> >;
 
     template<typename F>
@@ -84,7 +84,7 @@ struct FindCoercionAux
     template<typename F>
     struct C
     {
-        template<const int, typename F1>
+        template<typename F1>
         using Exclude
                   = Not<And<TypesEqual<typename F::from, typename F1::from>,
                             TypesEqual<typename F::to, typename F1::to> > >;
@@ -115,12 +115,12 @@ struct FindCoercionAux1
               = typename FindCoercionAux<Head<D>, Head<Tail<D> >, Head<Tail<Tail<D> > >,
                                          Head<Tail<Tail<Tail<D> > > > >::type;
 
-    template<const int, typename L>
+    template<typename L>
     using NE = Not<Empty<L> >;
 
     typedef Filter<NE, FoldLeft<Append, Nil, Map<Step, A> > > new_A;
 
-    template<const int, typename D>
+    template<typename D>
     using Goal = TypesEqual<Head<Tail<D> >, Head<Tail<Tail<D> > > >;
 
     typedef Filter<Goal, new_A> goals;

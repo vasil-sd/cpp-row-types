@@ -34,7 +34,7 @@ constexpr const char teststr[] = "Test String!";
 typedef Record<N1, rec1, N2, int, Str, cString<teststr>> rec;
 struct M1 : Functor<M1, N1, N2>{};
 
-typedef Assoc<ToList<N2, int, N1, char>, N1> t;
+typedef Assoc<N1, ToList<N2, int, N1, char>> t;
 
 template<typename T>
 using P = Not<TypesEqual<N2, T> >;

@@ -68,10 +68,10 @@ struct String
 DefTypeSymbol(ConstString);
 
 template<const char Str[]>
-struct cString : String<cUInt<Length<StringToList<Str>>::value>>
+struct cString : String<Length<StringToList<Str>>>
 {
     typedef ConstString_Symbol type_name;
-    typedef String<cUInt<Length<StringToList<Str>>::value>> string;
+    typedef String<Length<StringToList<Str>>> string;
     typedef ConstStrings Type;
     typedef cString type;
     typedef cString I;
@@ -80,10 +80,10 @@ struct cString : String<cUInt<Length<StringToList<Str>>::value>>
 
     cString()
     {
-        int i = String<cUInt<Length<StringToList<Str>>::value>>::length-1;
+        int i = String<Length<StringToList<Str>>>::length-1;
         do
         {
-            String<cUInt<Length<StringToList<Str>>::value>>::value[i] = cvalue[i];
+            String<Length<StringToList<Str>>>::value[i] = cvalue[i];
         }while(i--);
     }
 };

@@ -2,14 +2,17 @@
 
 #include "example.h"
 
+template<typename A, typename B, typename = typename And<InUInt<A>, InUInt<B>>::I>
+struct RR : cUInt<A::cvalue + B::cvalue> {};
+
 int
 main()
 {
     printf("%d, %d\n", ValuesEqual<True, False>::value, ValuesEqual<True, True>::value);
     printf("%d, %d\n", TypesEqual<int, int>::value, TypesEqual<char, int>::value);
     printf("%d %d\n", Inhabited<True>::value, Inhabited<False>::value);
-    printf("%d\n", Length<TCons<int, TCons<char, Nil> > >::value);
-    printf("%d\n", Length<ToList<int, char, short, int> >::value);
+    printf("%d\n", Length<TCons<int, TCons<char, Nil> > >::cvalue);
+    printf("%d\n", Length<ToList<int, char, short, int> >::cvalue);
 //    Abc abc;
 
     Field<ToList<N2>>::Access(Field<ToList<N1>>::Access(r)) = 22;
@@ -22,10 +25,10 @@ main()
     typedef ToList<N1, N1, N2, N2, N1, int> ll;
     typedef Filter<P, ll> pl;
     typedef FilterN<P1, ll> pl1;
-    printf("%d\n", Length<pl>::value);
-    printf("%d\n", Length<pl1>::value);
-    printf("%d\n", Length<SelectEven<ll> >::value);
-    printf("%d\n", Length<SelectOdd<ll> >::value);
+    printf("%d\n", Length<pl>::cvalue);
+    printf("%d\n", Length<pl1>::cvalue);
+    printf("%d\n", Length<SelectEven<ll> >::cvalue);
+    printf("%d\n", Length<SelectOdd<ll> >::cvalue);
     printf("%d\n", IsPresent<Next, ll>::value);
     printf("FOLD: %d\n", FoldLeft<And, True, ToList<True, False, True> >::value);
     printf("SUBSET: %d\n", IsSubset<ToList<False, False, N1>, ToList<N1, True, False, True> >::value);
@@ -42,7 +45,7 @@ main()
     TPrinter<SelectCoercions<ToList<unsigned char, unsigned short, unsigned int, int, char, N1, short, N2>,
                              StaticCast::Coerce, StaticCast::Coerce, StaticCast::Coerce> >::Print(printf);
     printf("\n");
-    TPrinter<Assoc<ToList<N1, char>, N1> >::Print(printf);
+    TPrinter<Assoc<N1, ToList<N1, char>> >::Print(printf);
     printf("\n");
     TPrinter<Present<Next, ll> >::Print(printf);
     printf("\n");
@@ -101,6 +104,10 @@ main()
     printf("\n");
     static constexpr const char abb[] = "abc";
     TPrinter<cString<abb>>::Print(printf);
+    printf("\n");
+    typedef ApplyToList<RR, ToList<cUInt<3>, cUInt<5>>> arr;
+    TPrinter<arr>::Print(printf);
+    printf("\n");
     return 0;
 }
 

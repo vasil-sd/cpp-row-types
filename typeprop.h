@@ -146,7 +146,7 @@ template<typename T>
 struct TypesEqualAux<T, T>: True {};
 
 template<typename LT, typename RT>
-using TypesEqual = typename TypesEqualAux<LT, RT>::type;
+using TypesEqual = Essence<TypesEqualAux<LT, RT>>;
 
 template<typename T>
 struct InhabitedAux
@@ -186,6 +186,9 @@ struct IfAux<False, TrueBranch, FalseBranch>
 
 template<typename Cond, typename TrueBranch, typename FalseBranch>
 using If = Essence<IfAux<Essence<Cond>, TrueBranch, FalseBranch>>;
+
+template<typename T>
+using Identity = T;
 
 } // end of namespace typeprop
 

@@ -186,17 +186,17 @@ struct CloseCompositionsAux<C, Nil>
     typedef C type;
 };
 
-template<typename CL, const int l = Length<CL>::value>
+template<typename CL, typename l = Length<CL>>
 struct CloseCompositionsAux1
 {
     typedef typename CloseCompositionsAux<Head<CL>, Tail<CL> >::type type;
 };
 
 template<>
-struct CloseCompositionsAux1<Nil, 0>: False {};
+struct CloseCompositionsAux1<Nil, cInt<0>>: False {};
 
 template<typename CL>
-struct CloseCompositionsAux1<CL, 1>
+struct CloseCompositionsAux1<CL, cInt<1>>
 {
     typedef Head<CL> type;
 };

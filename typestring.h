@@ -39,6 +39,7 @@ struct StringToListAux<Str,Idx,0> : Nil {};
 template<const char Str[]>
 using StringToList = Essence<StringToListAux<Str>>;
 
+
 } // end of namespace typestring
 
 
@@ -88,8 +89,28 @@ struct cString : String<Length<StringToList<Str>>>
     }
 };
 
-} // end of namespace typestring
+} // end of namespace typeuniverse
 
+namespace typestring
+{
+
+template<typename TL, typename Len, typename ...Args>
+struct CharListToStringAux : CharListToStringAux<Tail<TL>, Len, Args..., Head<TL>> {};
+
+template<typename Len, typename ...Args>
+struct CharListToStringAux<Nil, Len, Args...>
+{
+    static constexpr const char string[Len::cvalue+1] = {Args::cvalue..., '\0'};
+};
+
+template<typename TL>
+using IsCharList = FoldLeft<And, True, Map<IncChar, TL>>;
+
+template<typename TL,
+         typename = typename IsCharList<TL>::I> // check that list is of chars only
+using CharListToString = CharListToStringAux<TL, Length<TL>>;
+
+}
 
 namespace typeprint
 {

@@ -144,10 +144,13 @@ using Empty = Essence<EmptyAux<L>>;
 // length
 
 template<typename List>
-struct Length : cInt<1 + Length<Tail<List>>::cvalue> {};
+struct LengthAux : cInt<1 + LengthAux<Tail<List>>::cvalue> {};
 
 template<>
-struct Length<Nil> : cInt<0> {};
+struct LengthAux<Nil> : cInt<0> {};
+
+template<typename L, typename = typename InList<L>::I>
+using Length = Essence<LengthAux<L>>;
 
 // Some conversion functions
 
@@ -190,6 +193,12 @@ struct FoldLeftLAux<F, V, Nil> : V {};
 template<template<typename...> typename F, typename V, typename L>
 using FoldLeftL = Essence<FoldLeftLAux<F, V, L>>;
 
+template<typename TL, typename = typename InList<TL>::I>
+using Reverse = FoldLeft<SwapTemplateArgs21<TCons>::template T, Nil, TL>;
+
+template<typename L1, typename L2, typename = typename And<InList<L1>, InList<L2>>::I>
+using Append = FoldLeft<SwapTemplateArgs21<TCons>::template T, L2, Reverse<L1>>;
+
 // Filter
 
 template<template <typename...> typename P, typename FL>
@@ -228,7 +237,6 @@ using MkList = Essence<MkListAux<N, T>>;
 
 
 // zip
-
 template<typename L1, typename L2>
 struct InterleaveAux : TCons<Head<L1>, TCons<Head<L2>, Essence<InterleaveAux<Tail<L1>, Tail<L2> >>> > {};
 
@@ -308,28 +316,18 @@ struct SliceAux
 };
 
 template<typename L, typename From, typename To,
-         typename = typename And<InList<L>, And<IsIntegralType<From>, And<IsIntegralType<To>, BoolToProp<To::cvalue <= From::cvalue>>>>::I>
+         typename = typename And<InList<L>, And<IsIntegralType<From>, And<IsIntegralType<To>, BoolToProp<To::cvalue >= From::cvalue>>>>::I>
 using Slice = Essence<SliceAux<L, From, To>>;
 
-template<typename Elt, typename L, template<typename...> typename P>
-struct IsPresentAux
-{
-    template<typename N>
-    using P1 = P<Elt, N>;
-    typedef Not<Empty<Filter<P1, L> > > type;
-};
+template<typename Elt, typename L, template<typename...> typename P = TypesEqual,
+         typename = typename InList<L>::I>
+using IsPresent = Not<Empty<Filter<CloseTemplate<P,Elt>::template T, L> > >;
 
-template<typename Elt, typename L, template<typename...> typename P = TypesEqual>
-using IsPresent = Essence<IsPresentAux<Elt, L, P>>;
-
-template<template<typename...> typename F, typename L>
-struct MapAux : TCons<Essence<F<Head<L> > >, Essence<MapAux<F, Tail<L> >>> {};
-
-template<template<typename...> typename F>
-struct MapAux<F, Nil> : Nil {};
+template<typename Elt, typename L>
+using IsPresentType = Not<Empty<Filter<CloseTemplate<TypesEqual,Elt>::template T, L> > >;
 
 template<template<typename...> typename F, typename L, typename = typename InList<L>::I>
-using Map = Essence<MapAux<F, L>>;
+using Map = FoldLeft<TemplatePreprocessArgs<SwapTemplateArgs21<TCons>::template T, Identity, TemplateComposition<Essence, F>:: template T>::template T, Nil, Reverse<L>>;
 
 template<template<typename...> typename F, typename L1, typename L2>
 struct Map2Aux : TCons<Essence<F<Head<L1>, Head<L2> > >, Essence<Map2Aux<F, Tail<L1>, Tail<L2> >>> {};
@@ -341,23 +339,25 @@ template<template<typename...> typename F, typename L1, typename L2,
          typename = typename And<InList<L1>, InList<L2>>::I>
 using Map2 = Essence<Map2Aux<F, L1, L2>>;
 
+template<typename L>
+using IsListOfPairs = FoldLeft<And, True, Map<InPair, L>>;
+
+template<template<typename...> typename F, typename P,
+         typename = typename InPair<P>::I>
+using ApplyToPair = Essence<F<First<P>, Second<P>>>;
+
+template<template<typename...> typename F, typename L,
+         typename = typename IsListOfPairs<L>::I>
+using Map2P = Essence<Map<CloseTemplateTemplateArg<ApplyToPair, F>:: template T, L>>;
+
 template<typename TL1, typename TL2,
          typename = typename And<InList<TL1>, InList<TL2>>::I,
          typename = typename BoolToProp<Length<TL1>::cvalue == Length<TL2>::cvalue>::I>
 using Zip = Map2<TPair, TL1, TL2>;
 
-template<typename L1, typename L2>
-struct IsSubsetAux
-{
-    template<typename N>
-    using P = IsPresent<N, L2>;
-
-    typedef FoldLeft<And, True, Map<P, L1> > type;
-};
-
 template<typename L1, typename L2,
          typename = typename And<InList<L1>, InList<L2>>::I>
-using IsSubset = Essence<IsSubsetAux<L1, L2>>;
+using IsSubset = Essence<FoldLeft<And, True, Map<CloseTemplateLastArgs<IsPresentType, L2>:: template T, L1> >>;
 
 template<typename L1, typename L2,
          typename = typename And<InList<L1>, InList<L2>>::I>
@@ -371,30 +371,11 @@ template<typename T, typename L,
          typename = typename InList<L>::I>
 using Intersperse = Interleave<L, MkList<Length<L>, T> >;
 
-template<typename L1, typename L2>
-struct AppendAux : TCons<Head<L1>, Essence<AppendAux<Tail<L1>, L2>>> {};
-
-template<typename L2>
-struct AppendAux<Nil, L2> : L2 {};
-
-template<typename L1, typename L2,
-         typename = typename And<InList<L1>, InList<L2>>::I>
-using Append = Essence<AppendAux<L1, L2>>;
-
 template<typename T1, typename T2>
 struct ProductAux
 {
     template<typename N1>
-    struct P1aux
-    {
-        template<typename N2>
-        using P2 = TPair<N1, N2>;
-
-        typedef Map<P2, T2> type;
-    };
-
-    template<typename T>
-    using P1 = Essence<P1aux<T>>;
+    using P1 = Map<CloseTemplate<TPair, N1>::template T, T2>;
 
     typedef FoldLeft<Append, Nil, Map<P1, T1> > type;
 };
@@ -402,16 +383,8 @@ struct ProductAux
 template<typename L1, typename L2, typename = typename And<InList<L1>, InList<L2>>::I>
 using Product = Essence<ProductAux<L1, L2>>;
 
-template<typename N, typename TL, template<typename...> typename P = TypesEqual>
-struct PresentAux
-{
-    template<typename T>
-    using P1 = Essence<P<N, T>>;
-    typedef FoldLeft<Or, False, Map<P1, TL> > type;
-};
-
 template<typename T, typename TL, template<typename...> typename P = TypesEqual, typename = typename InList<TL>::I>
-using Present = Essence<PresentAux<T, TL, P>>;
+using Present = FoldLeft<Or, False, Map<TemplateComposition<Essence, CloseTemplate<P, T>::template T>::template T, TL> >;
 
 template<typename TL, template<typename...> typename P>
 struct UniqAux1
@@ -425,10 +398,6 @@ struct UniqAux1
 template<typename TL, template<typename...> typename P = TypesEqual, typename = typename InList<TL>::I>
 using Uniq = Essence<UniqAux1<TL, P>>;
 
-//Reverse
-
-template<typename TL>
-using Reverse = FoldLeft<SwapTemplateArgs21<TCons>::Template, Nil, TL>;
 
 template<typename TL, template<typename...> typename P = TypesEqual,
          typename = typename InList<TL>::I>
@@ -462,27 +431,61 @@ template <template<typename ...> typename T, typename TL, typename ... Args>
 struct ApplyToListAux : ApplyToListAux<T, Tail<TL>, Args..., Head<TL>> {};
 
 template <template<typename ...> typename T, typename ... Args>
-struct ApplyToListAux<T, Nil, Args...>
-{
-    typedef T<Args...> type;
-};
+struct ApplyToListAux<T, Nil, Args...> : T<Args...> {};
 
 template<template <typename ...> typename T, typename TL, typename = typename InList<TL>::I>
 using ApplyToList = Essence<ApplyToListAux<T, TL>>;
 
 //assoc
 
-template<typename N, typename TL, template<typename...> typename P = TypesEqual>
-struct AssocAux
-{
-    template <typename V>
-    using F = P<N, First<V>>;
-    typedef Second<Head<Filter<F, Zip<SelectEven<TL>, SelectOdd<TL>>>>> type;
-};
-
 template<typename N, typename TL, template<typename...> typename P = TypesEqual,
          typename = typename InList<TL>::I>
-using Assoc = Essence<AssocAux<N, TL, P>>;
+using Assoc = Second<Head<Filter<TemplateComposition<CloseTemplate<P, N>::template T, First>::template T, Zip<SelectEven<TL>, SelectOdd<TL>>>>>;
+
+template<typename From, typename To>
+struct MkIntsListAux : TCons<From, Essence<MkIntsListAux<cInt<From::cvalue+1>, To>>> {};
+
+template<typename From>
+struct MkIntsListAux<From, From> : Nil {};
+
+template<typename From, typename To,
+         typename = typename And<IsIntegralType<From>, And<IsIntegralType<To>, BoolToProp<To::cvalue >= From::cvalue>>>::I>
+using MkIntsList = Essence<MkIntsListAux<From, To>>;
+
+template<typename TL>
+using Enumerate = Zip<MkIntsList<cInt<0>,Length<TL>>, TL>;
+
+template<template<typename> typename P, typename TL,
+         typename = typename InList<TL>::I>
+using Search = Essence<First<Head<Filter<TemplateComposition<P, Second>::template T, Enumerate<TL>>>>>;
+
+template<typename ...Args>
+using Switch = Search<Identity, ToList<Args...>>;
+
+/* Example of switch usage:
+
+    template<typename T, typename Case = Switch<
+             //0
+             TypesEqual<typename T::Type, Int>,
+             //1 
+             TypesEqual<typename T::Type, Char>,
+             //2 
+             TypesEqual<typename T::Type, Short>
+             >>
+    struct SwitchExample : False {};
+
+    template<typename T>
+    struct SwitchExample<T, cInt<0>> : True {};
+
+    template<typename T>
+    struct SwitchExample<T, cInt<1>> : True {};
+
+    template<typename T>
+    struct SwitchExample<T, cInt<2>> : True {};
+*/
+
+template<typename L, typename = typename InList<L>::I>
+using IsListMonomorphic = BoolToProp<Length<Uniq<Map<TypeOf, L>>>::cvalue <= 1>;
 
 
 } // end of namespace typelist

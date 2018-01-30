@@ -165,13 +165,22 @@ struct TPrinter
 };
 }
 
+#define ConstTypeDiscriminator(T) \
+template<typename C, typename ST = typename C::Type> \
+struct Inc##T##Aux : False {}; \
+template<typename C> \
+struct Inc##T##Aux<C, T> : True {}; \
+template<typename C> \
+using Inc##T = Essence<Inc##T##Aux<C>>
+
 #define DefPrimitiveType(Prim, T) \
     namespace typeuniverse { DefTypePrimitive(Prim, T); } \
     namespace typeprint { using namespace typeuniverse; TypePrimitivePrinterMacro(T); } \
     namespace typeprimitive { using namespace typeuniverse; using namespace typeprint; TypePrimitiveWrapperMacro( \
                                   Prim, \
                                   T); \
-                              TypeDiscriminator(T);}
+                              TypeDiscriminator(T); \
+                              ConstTypeDiscriminator(T);}
 
 //Here actual definitions
 DefPrimitiveType(int, Int);

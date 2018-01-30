@@ -173,22 +173,23 @@ template<>
 struct InhabitedAux2<true>: True {};
 
 template<typename Cond, typename TrueBranch, typename FalseBranch>
-struct IfAux
-{
-    typedef TrueBranch type;
-};
+struct IfAux : TrueBranch {};
 
 template<typename TrueBranch, typename FalseBranch>
-struct IfAux<False, TrueBranch, FalseBranch>
-{
-    typedef FalseBranch type;
-};
+struct IfAux<False, TrueBranch, FalseBranch> : FalseBranch {};
 
 template<typename Cond, typename TrueBranch, typename FalseBranch>
-using If = Essence<IfAux<Essence<Cond>, TrueBranch, FalseBranch>>;
+using If = Essence<IfAux<Essence<Cond>, Essence<TrueBranch>, Essence<FalseBranch>>>;
 
-template<typename T>
-using Identity = T;
+template<template<typename...> typename F, typename V, template<typename...> typename EQ, typename Stop = Essence<EQ<Essence<F<V>>, Essence<V>>>>
+struct FixpointAux : FixpointAux<F, Essence<F<V>>, EQ> {};
+
+template<template<typename...> typename F, typename V, template<typename...> typename EQ>
+struct FixpointAux<F, V, EQ, True> : Essence<V> {};
+
+template<template<typename...> typename F, typename V, template<typename...> typename EQ = TypesEqual>
+using Fixpoint = Essence<FixpointAux<F, V, EQ>>;
+
 
 } // end of namespace typeprop
 

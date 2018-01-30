@@ -1,9 +1,21 @@
 #include <stdio.h>
 
+#include "typerelation.h"
+
 #include "example.h"
+
+using namespace typerelation;
 
 template<typename A, typename B, typename = typename And<InUInt<A>, InUInt<B>>::I>
 struct RR : cUInt<A::cvalue + B::cvalue> {};
+    struct Tmp
+    {
+        template <typename N>
+        using P = BoolToProp<N::cvalue == 'c'>;
+    };
+
+template<typename N>
+using Prep = cInt<N::cvalue + 10>;
 
 int
 main()
@@ -23,15 +35,25 @@ main()
     Field<ToList<N2>>::Access(r) = 0;
     
     typedef ToList<N1, N1, N2, N2, N1, int> ll;
+    typedef ToList<Next, int, N2> ll1;
+    printf("APPEND\n");    
+    printf("ll = \n");
+    TPrinter<ll>::Print(printf);
+    printf("ll1 = \n");
+    TPrinter<ll1>::Print(printf);
+    printf("append ll ll1 = \n");
+    TPrinter<Append<ll, ll1>>::Print(printf);
+    printf("\n");
     typedef Filter<P, ll> pl;
     typedef FilterN<P1, ll> pl1;
     printf("%d\n", Length<pl>::cvalue);
     printf("%d\n", Length<pl1>::cvalue);
     printf("%d\n", Length<SelectEven<ll> >::cvalue);
     printf("%d\n", Length<SelectOdd<ll> >::cvalue);
-    printf("%d\n", IsPresent<Next, ll>::value);
+    printf("PRESENT:%d\n", IsPresent<Next, ll>::value);
+    printf("PRESENT:%d\n", IsPresent<N2, ll>::value);
     printf("FOLD: %d\n", FoldLeft<And, True, ToList<True, False, True> >::value);
-    printf("SUBSET: %d\n", IsSubset<ToList<False, False, N1>, ToList<N1, True, False, True> >::value);
+    printf("SUBSET: %d\n", IsSubset<ToList<False, False, N1>, ToList<N1, True, N2, False, True> >::value);
     printf("LISTSEQ: %d\n", ListsEqual<ToList<False, False, N1>, ToList<False, False, N2> >::value);
     TPrinter<ll>::Print(printf);
     printf("\n");
@@ -42,8 +64,8 @@ main()
     printf("\n");
     TPrinter<M1>::Print(printf);
     printf("\n");
-    TPrinter<SelectCoercions<ToList<unsigned char, unsigned short, unsigned int, int, char, N1, short, N2>,
-                             StaticCast::Coerce, StaticCast::Coerce, StaticCast::Coerce> >::Print(printf);
+    TPrinter<GetAllCoercions<StaticCast::Coerce, ToList<unsigned char, unsigned short, unsigned int, int, char, N1, short, N2>
+                             > >::Print(printf);
     printf("\n");
     TPrinter<Assoc<N1, ToList<N1, char>> >::Print(printf);
     printf("\n");
@@ -52,8 +74,8 @@ main()
     TPrinter<Present<int, ToList<Nil, int> > >::Print(printf);
     printf("\n");
     TPrinter<Uniq<Nil> >::Print(printf);
-    printf("\n-------\n");
-    typedef FindCoercion<unsigned char, int, ToList<char, int, short, unsigned int, Next, N1>,
+    printf("\nCOERSION:\n-------\n");
+    typedef FindCoercion<UChar, Int, ToList<UChar, Char, Int, Short, UInt, Next, N1>,
                          StaticCast::Coerce> coercion;
     TPrinter<coercion>::Print(printf);
     WrapPrimitiveType<unsigned char> c(123);
@@ -107,6 +129,26 @@ main()
     printf("\n");
     typedef ApplyToList<RR, ToList<cUInt<3>, cUInt<5>>> arr;
     TPrinter<arr>::Print(printf);
+    printf("\n");
+    static constexpr char sss[] = "abc";
+    printf("%s\n", CharListToString<StringToList<sss>>::string);
+    printf("%d\n", Search<Tmp::P, StringToList<sss>>::cvalue);
+    TPrinter<IsListMonomorphic<ToList<Int, Int, cInt<0>>>>::Print(printf);
+    printf("\n");
+    TPrinter<Map<Prep, ToList<cInt<0>, cInt<1>, cInt<2>>>>::Print(printf);
+    printf("\n");
+    typedef Rel<ToList<TPair<N1, N2>, TPair<N2, N3>, TPair<N3, N4>, TPair<N4, N5>>> rel;
+    TPrinter<rel>::Print(printf);
+    printf("\n");
+    typedef RelPath<ToList<TPair<N1, N2>, TPair<N2, N3>>> relpath;
+    typedef RelPath<ToList<TPair<N2, N3>, TPair<N3, N4>, TPair<N4, N5>>> relpath1;
+    typedef RelPath<ToList<TPair<N4, N5>, TPair<N5, N6>>> relpath2;
+    typedef RelPath<ToList<TPair<N6, N7>, TPair<N7, N7>>> relpath3;
+    typedef RelPath<ToList<TPair<N3, N4>>> relpath4;
+    TPrinter<relpath>::Print(printf);
+    printf("\n");
+    typedef ExtendRelPath<relpath, ToList<relpath1, relpath2, relpath3, relpath4>>::type ext;
+    TPrinter<CloseRelation<rel>>::Print(printf);
     printf("\n");
     return 0;
 }

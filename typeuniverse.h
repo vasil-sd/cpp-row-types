@@ -70,6 +70,9 @@ using TypeOf = typename F::Type;
 template <typename F>
 using Essence = typename F::type;
 
+template <typename T>
+using Identity = T;
+
 } // end of namespace typeuniverse
 
 #endif // __TYPEUNIVERSE__

@@ -2,7 +2,7 @@
 
 This template library may be helpful for someone, who looks for reflection in C++, row types and some type system in templates.
 
-Coming soon: string manipulation in templates, which opens door to easy maintainable reflexivity and metaprogramming over symbols and so on.
+For good example of reflexivity, see file example.h GenerateId template.
 
 ## Preliminary roadmap:
 
@@ -14,7 +14,7 @@ Coming soon: string manipulation in templates, which opens door to easy maintain
 5. Full support of dependent types.
 
 ### From engineering point of view:
-1. Rework and improve type coercion part.
+1. DONE Rework and improve type coercion part.
 2. Separate types, their representation and their storage.
    This opens whole new world of using data types in code, where code can be abstracted even from representation of data types.
    Think of code, which does not care if numbers represented as 32bit uints, or as strings of decimal digits, or as numbers in residue number system.

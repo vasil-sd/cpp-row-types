@@ -32,7 +32,7 @@ struct Symbol
     typedef UU Type;
     typedef Symbol type;
     typedef Symbol I;
-    static constexpr const char value[] = "Symbol";
+    static constexpr const unsigned char cvalue[] = "Symbol";
 };
 
 #define DefTypeSymbol(Name) \
@@ -41,7 +41,7 @@ struct Symbol
         typedef Name##_Symbol type_name; \
         typedef Symbol Type; \
         typedef Name##_Symbol type; \
-        static constexpr const char value[] = #Name; \
+        static constexpr const unsigned char cvalue[] = #Name; \
     }
 
 #define DefSymbol(Name) \
@@ -50,7 +50,7 @@ struct Symbol
         typedef Name type_name; \
         typedef Symbol Type; \
         typedef Name type; \
-        static constexpr const char value[] = #Name; \
+        static constexpr const unsigned char cvalue[] = #Name; \
     }
 
 DefSymbol(UU_Symbol);

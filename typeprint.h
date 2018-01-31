@@ -14,13 +14,13 @@ struct TypePrinter
     template<typename F>
     static void Print(F f)
     {
-        f(T::type_name::value);
+        f(reinterpret_cast<const char *>(T::type_name::cvalue));
     }
     template<typename F>
     static void print(F f, const T& o)
     {
         f("value_of(");
-        f(T::type_name::value);
+        f(reinterpret_cast<const char *>(T::type_name::cvalue));
         f(")");
     }
 };

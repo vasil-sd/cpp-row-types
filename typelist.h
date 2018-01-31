@@ -72,7 +72,7 @@ struct TypePrinter<Nil, List>
     template<typename F>
     static void Print(F f)
     {
-        f(Nil::type_name::value);
+        f(reinterpret_cast<const char *>(Nil::type_name::cvalue));
     }
 
 };
@@ -83,7 +83,7 @@ struct TypePrinter<T, List>
     template<typename F>
     static void Print(F f)
     {
-        f(T::type_name::value);
+        f(reinterpret_cast<const char *>(T::type_name::cvalue));
         f("( ");
         TPrinter<typename T::head>::template Print<F>(f);
         f(" , ");
@@ -99,7 +99,7 @@ struct TypePrinter<P, Pair>
     template<typename F>
     static void Print(F f)
     {
-        f(P::type_name::value);
+        f(reinterpret_cast<const char *>(P::type_name::cvalue));
         f("( ");
         TPrinter<typename P::first>::template Print<F>(f);
         f(" , ");
@@ -487,6 +487,8 @@ using Switch = Search<Identity, ToList<Args...>>;
 template<typename L, typename = typename InList<L>::I>
 using IsListMonomorphic = BoolToProp<Length<Uniq<Map<TypeOf, L>>>::cvalue <= 1>;
 
+template<typename L, typename T, typename = typename IsListMonomorphic<L>::I>
+using IsListElementsOfType = TypesEqual<T, TypeOf<Head<L>>>;
 
 } // end of namespace typelist
 

@@ -35,7 +35,7 @@ struct TypePrinter<Functor, Morphism>
     template<typename F>
     static void Print(F f)
     {
-        f(Functor::type_name::value);
+        f(reinterpret_cast<const char *>(Functor::type_name::cvalue));
         f("( ");
         TPrinter<typename Functor::from>::Print(f);
         f(" -> ");

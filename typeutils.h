@@ -4,7 +4,6 @@
 #include "typeuniverse.h"
 #include "typeprint.h"
 #include "typeprop.h"
-#include "typeprimitive.h"
 #include "typelist.h"
 
 namespace typeutils
@@ -69,6 +68,21 @@ struct SelectTemplateArg2of2
     template<typename A, typename B>
     using T = F<B>;
 };
+
+template<template<typename...> typename F>
+struct DoubleTemplateArg
+{
+    template<typename A>
+    using T = F<A,A>;
+};
+
+template<template<typename...> typename F>
+struct TrippleTemplateArg
+{
+    template<typename A, typename B, typename C>
+    using T = F<A, B, C>;
+};
+
 
 template<template<template<typename...>typename, typename...> typename OriginalT, template<typename...> typename CapturedT>
 struct CloseTemplateTemplateArg {

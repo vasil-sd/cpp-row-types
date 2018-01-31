@@ -49,6 +49,8 @@ using IsIntegralType = Or<InIntegral<T>, InIntegral<TypeOf<T>>>;
         typedef T Type; \
         static constexpr Prim cvalue = Val; \
         typedef c##T type; \
+        template<const Prim Arg> \
+        using type_template = c##T<Arg>; \
         c##T() : T(cvalue) {} \
         c##T(const primitive_type &v) : T(value) {} \
         c##T(const type &v) : T(v.value) {} \

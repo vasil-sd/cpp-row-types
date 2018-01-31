@@ -280,7 +280,7 @@ struct TypePrinter<R, Records>
     template<typename F>
     static void Print(F f)
     {
-        f(R::type_name::value);
+        f(reinterpret_cast<const char *>(R::type_name::cvalue));
         f("{ ");
         FieldPrinter<Fields<R>>::Print(f);
         f(" }");

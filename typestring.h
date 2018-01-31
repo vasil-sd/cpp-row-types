@@ -25,20 +25,30 @@ using namespace typeprop;
 using namespace typeprimitive;
 using namespace typelist;
 
-template<const char Str[], const unsigned int Idx = 0, const char C = 1>
-struct StringToListAux
+template<const unsigned char Str[], const unsigned int Idx = 0, const unsigned char C = Str[0]>
+struct CStringToCharListAux :If<BoolToProp<Str[Idx] != 0>, TCons<cUChar<Str[Idx]>, Essence<CStringToCharListAux<Str, Idx + 1, Str[Idx]>>>, Nil> {};
+
+template<const unsigned char Str[], const unsigned int Idx>
+struct CStringToCharListAux<Str,Idx,0> : Nil {};
+
+template<const unsigned char Str[]>
+using CStringToCharList = Essence<CStringToCharListAux<Str>>;
+
+template<typename TL, typename Len, typename ...Args>
+struct CharListToCStringAux : CharListToCStringAux<Tail<TL>, Len, Args..., Head<TL>> {};
+
+template<typename Len, typename ...Args>
+struct CharListToCStringAux<Nil, Len, Args...>
 {
-    static constexpr const char c = Str[Idx];
-    typedef If<BoolToProp<c != 0>, TCons<cChar<c>, Essence<StringToListAux<Str, Idx + 1, c>>>, Nil> type;
-//    typedef TCons<cChar<c>, Essence<StringToListAux<Str, Idx + 1, c>>> type;
+    static constexpr const unsigned char cvalue[Len::cvalue+1] = {Args::cvalue..., '\0'};
 };
 
-template<const char Str[], const unsigned int Idx>
-struct StringToListAux<Str,Idx,0> : Nil {};
+template<typename TL>
+using IsCharList = FoldLeft<And, True, Map<IncUChar, TL>>;
 
-template<const char Str[]>
-using StringToList = Essence<StringToListAux<Str>>;
-
+template<typename TL,
+         typename = typename IsCharList<TL>::I> 
+using CharListToCString = CharListToCStringAux<TL, Length<TL>>;
 
 } // end of namespace typestring
 
@@ -54,7 +64,7 @@ using namespace typestring;
 
 DefTypeSymbol(String);
 
-template<typename L>
+template<typename L, typename = typename IsIntegralType<L>::I>
 struct String
 {
     typedef String_Symbol type_name;
@@ -62,55 +72,58 @@ struct String
     typedef String type;
     typedef String I;
 
-    static constexpr unsigned int length = L::cvalue;
-    char value[length];
+    static constexpr const unsigned int length = L::cvalue;
+    unsigned char value[length];
+
+    template <typename nL>
+    using type_template = String<nL>;
 };
 
 DefTypeSymbol(ConstString);
 
-template<const char Str[]>
-struct cString : String<Length<StringToList<Str>>>
+template<typename CL, typename = typename IsCharList<CL>::I>
+struct cString : String<Length<CL>>
 {
     typedef ConstString_Symbol type_name;
-    typedef String<Length<StringToList<Str>>> string;
+    typedef String<Length<CL>> string;
     typedef ConstStrings Type;
     typedef cString type;
     typedef cString I;
-    static constexpr const char* cvalue = Str;
-    typedef StringToList<Str> char_list;
+    static constexpr const unsigned char* cvalue = CharListToCString<CL>::cvalue;
+    typedef CL char_list;
 
     cString()
     {
-        int i = String<Length<StringToList<Str>>>::length-1;
+        int i = String<Length<CL>>::length-1;
         do
         {
-            String<Length<StringToList<Str>>>::value[i] = cvalue[i];
+            String<Length<CL>>::value[i] = cvalue[i];
         }while(i--);
     }
+
+    template <typename nCL>
+    using type_template = cString<nCL>;
 };
 
 } // end of namespace typeuniverse
 
+
 namespace typestring
 {
 
-template<typename TL, typename Len, typename ...Args>
-struct CharListToStringAux : CharListToStringAux<Tail<TL>, Len, Args..., Head<TL>> {};
+using namespace typeuniverse;
+using namespace typeprint;
+using namespace typeprop;
+using namespace typeprimitive;
+using namespace typelist;
 
-template<typename Len, typename ...Args>
-struct CharListToStringAux<Nil, Len, Args...>
-{
-    static constexpr const char string[Len::cvalue+1] = {Args::cvalue..., '\0'};
-};
+template<typename S1, typename S2, typename = typename IsListElementsOfType<ToList<S1,S2>, ConstStrings>::I>
+using StringAppend = cString<Append<typename S1::char_list, typename S2::char_list>>;
 
-template<typename TL>
-using IsCharList = FoldLeft<And, True, Map<IncChar, TL>>;
+template<typename SL, typename = typename IsListElementsOfType<SL, ConstStrings>::I>
+using AppendStrings = FoldLeft<StringAppend, Head<SL>, Tail<SL>>;
 
-template<typename TL,
-         typename = typename IsCharList<TL>::I> // check that list is of chars only
-using CharListToString = CharListToStringAux<TL, Length<TL>>;
-
-}
+} // end of namespace typestring
 
 namespace typeprint
 {
@@ -172,7 +185,7 @@ struct TypePrinter<T, ConstStrings>
         f(s);
         f("}");
         f("(\"");
-        f(T::cvalue);
+        f(reinterpret_cast<const char *>(T::cvalue));
         f("\")");
     }
 

@@ -4,6 +4,7 @@
 #include "typecoercion.h"
 #include "typerecord.h"
 #include "typestring.h"
+#include "typeprimitivemath.h"
 
 using namespace typeuniverse;
 using namespace typeprop;
@@ -29,9 +30,9 @@ DefSymbol(Str);
 
 typedef Record<N2, char> rec1;
 typedef Record<Next, cChar<34>> rec2;
-constexpr const char teststr[] = "Test String!";
+constexpr const unsigned char teststr[] = "Test String!";
 
-typedef Record<N1, rec1, N2, int, Str, cString<teststr>> rec;
+typedef Record<N1, rec1, N2, int, Str, cString<CStringToCharList<teststr>>> rec;
 struct M1 : Functor<M1, N1, N2>{};
 
 typedef Assoc<N1, ToList<N2, int, N1, char>> t;
@@ -47,11 +48,12 @@ Code to calculate 'uniq' id of record, and add it as a filed.
 This can help to identify records in runtime.
 */
 
+
 template<typename Chars>
 struct CalcCharListHash
 {
     template<typename Sum, typename V>
-    using P = TPair<cUInt<(V::cvalue + First<Sum>::cvalue * (Second<Sum>::cvalue + V::cvalue))&0xFFFFFFFF>, cUInt<(Second<Sum>::cvalue * 13)&0xFFFFFFFF >>;
+    using P = TPair<cUInt<Add<V, Mul<First<Sum>, Add<Second<Sum>, V>>>::cvalue&0xFFFFFFFF>, cUInt<Mul<Second<Sum>, cUInt<13>>::cvalue&0xFFFFFFFF >>;
     typedef First<FoldLeft<P, TPair<cUInt<0x77331155UL>, cUInt<0x55AACCBBUL>>, Chars>> type;
 };
 
@@ -59,7 +61,7 @@ template<typename R>
 struct CalcRecordFieldNamesHashAux
 {
     template<typename Sym>
-    using SymToChars = StringToList<Sym::value>;
+    using SymToChars = CStringToCharList<Sym::cvalue>;
     typedef Essence<CalcCharListHash<FoldLeft<Append, Nil, Map<SymToChars, FieldNames<R>>>>> type;
 };
 
@@ -69,7 +71,11 @@ using CalcRecordFieldNamesHash = Essence<CalcRecordFieldNamesHashAux<R>>;
 DefSymbol(Id);
 
 template<typename R>
-using GenerateId = UnionRecords<Record<Id, cUInt<CalcRecordFieldNamesHash<R>::cvalue>>, R>;
+using GenerateId = UnionRecords<Record<Id, CalcRecordFieldNamesHash<R>>, R>;
+
+
+//template<typename R>
+//using GenerateId = R;
 
 rec r;
 rec1 r1;
@@ -80,6 +86,7 @@ auto r5 = r4 + r1 + Record<N5, UInt>();
 auto r6 = r - r4  + Record<N6, UInt>();
 auto r7 = r3 - r1 + Record<N7, UInt>();
 auto r8 = r7 + r1 + Record<N8, UInt>();
+
 
 typedef GenerateId<rec> new_rec;
 typedef GenerateId<decltype(r1)> new_r1;

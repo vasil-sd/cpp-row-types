@@ -4,9 +4,8 @@
 #include "typeuniverse.h"
 #include "typeprint.h"
 #include "typeprop.h"
-#include "typeprimitive.h"
 #include "typelist.h"
-#include "string.h"
+#include "typeutils.h"
 
 namespace typeuniverse
 {
@@ -49,6 +48,7 @@ using namespace typeprop;
 using namespace typeprimitive;
 using namespace typelist;
 using namespace typerelation;
+using namespace typeutils;
 
 DefTypeSymbol(Rel);
 
@@ -62,6 +62,12 @@ struct Rel
     typedef Rel I;
 
     typedef L relations;
+
+    template<typename T1, typename T2>
+    using R = Present<TPair<T1, T2>, relations>;
+
+    template<typename T>
+    using F = Second<Head<Filter<TemplateComposition<CloseTemplate<TypesEqual, T>::template T, First>::template T, relations>>>;
 };
 
 DefTypeSymbol(RelPath);
@@ -78,6 +84,12 @@ struct RelPath
 
     typedef L path;
 };
+
+template<typename Rp, typename = typename InRelationPaths<Rp>::I>
+using RelPathGetClosure = typename Rp::closure;
+
+template<typename Rp, typename = typename InRelationPaths<Rp>::I>
+using RelPathGetPath = typename Rp::path;
 
 } // end of namespace typestring
 
@@ -140,10 +152,13 @@ template<typename P, typename Ps,
          typename = typename IsListOfRelPaths<TCons<P, Ps>>::I>
 struct ExtendRelPath
 {
-    typedef First<typename P::closure> domain;
+    typedef TCons<First<typename P::closure>, Map<First, typename P::path>>  domains;
     typedef Second<typename P::closure> codomain;
     template<typename Pth>
-    using F = And<Not<TypesEqual<domain, Second<typename Pth::closure>>>, TypesEqual<codomain, First<typename Pth::closure>>>;
+    using F = And< Not<TypesEqual<First<typename Pth::closure>,Second<typename Pth::closure>>>,
+              And< Not<Present<First<typename Pth::closure>, domains>>,
+              And< Not<Present<Second<typename Pth::closure>, domains>>,
+                   TypesEqual<codomain, First<typename Pth::closure>>>>>;
     typedef Filter<F, Ps> extensions;
     template<typename Ext>
     using Func = RelPath<Append<typename P::path, typename Ext::path>>;
@@ -162,6 +177,12 @@ struct CloseRelationAux
 
 template<typename R, typename = typename InRelations<R>::I>
 using CloseRelation = Essence<CloseRelationAux<R>>;
+
+template<typename R, typename = typename InRelations<R>::I>
+using MakeReflexive = Rel<Uniq<Append<typename R::relations, Map<DoubleTemplateArg<TPair>::template T, Uniq<Append<Map<First, typename R::relations>, Map<Second, typename R::relations>>>>>>>;
+
+template<typename R, typename = typename InRelations<R>::I>
+using MakeSymmetrical = Rel<Uniq<Append<Map<SwapTemplateArgs21<TPair>::template T, typename R::relations>,typename R::relations>>>;
 
 } // end of namespace typerelation
 
